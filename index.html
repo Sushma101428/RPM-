@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RPM Prototype – Login</title>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body class="auth-body">
+  <main class="auth-card">
+    <img src="assets/logo.png" alt="App logo" class="logo-large" />
+    <h1>Sign in</h1>
+
+    <form id="loginForm" aria-label="Login">
+      <label>Role
+        <select name="role" id="roleSel" aria-label="Role">
+          <option value="patient">Patient</option>
+          <option value="provider">Provider</option>
+        </select>
+      </label>
+
+      <div id="patientFields">
+        <label>Patient ID
+          <input name="patient_id" placeholder="e.g., 1001" autocomplete="username" required />
+        </label>
+        <label>Password
+          <input name="patient_password" type="password" placeholder="Your password" required />
+        </label>
+      </div>
+
+      <div id="providerFields" style="display:none">
+        <label>Provider ID
+          <input name="provider_id" placeholder="e.g., P9001" />
+        </label>
+        <label>Password
+          <input name="provider_password" type="password" placeholder="Your password" />
+        </label>
+      </div>
+
+      <button type="submit" class="btn-primary">Sign in</button>
+    </form>
+
+    <p id="createLinks" class="muted small center mt-12">
+      New Patient? <a href="create-account.html">Create account</a>
+    </p>
+  </main>
+
+  <script type="module">
+    import { login } from "./js/auth.js";
+    import { validatePatient, validateProvider } from "./js/api.js";
+
+    const roleSel = document.getElementById("roleSel");
+    const patientBox = document.getElementById("patientFields");
+    const providerBox = document.getElementById("providerFields");
+    const links = document.getElementById("createLinks");
+
+    function toggleRoleUI() {
+      const patient = roleSel.value === "patient";
+      patientBox.style.display  = patient ? "block" : "none";
+      providerBox.style.display = patient ? "none" : "block";
+      patientBox.querySelectorAll("input").forEach(i => i.required = patient);
+      providerBox.querySelectorAll("input").forEach(i => i.required = !patient);
+      links.innerHTML = patient
+        ? 'New Patient? <a href="create-account.html">Create account</a>'
+        : 'New Provider? <a href="create-provider.html">Create provider</a>';
+    }
+    roleSel.addEventListener("change", toggleRoleUI); toggleRoleUI();
+
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const role = fd.get("role");
+
+      if (role === "patient") {
+        const id = fd.get("patient_id").trim();
+        const pw = fd.get("patient_password");
+        const u = await validatePatient(id, pw);
+        if (!u) return alert("Invalid patient credentials");
+        login({ role: "patient", id, name: u.name });
+      } else {
+        const id = fd.get("provider_id").trim();
+        const pw = fd.get("provider_password");
+        const u = await validateProvider(id, pw);
+        if (!u) return alert("Invalid provider credentials");
+        login({ role: "provider", id, name: u.name });
+      }
+      location.href = "dashboard.html";
+    });
+  </script>
+</body>
+</html>
